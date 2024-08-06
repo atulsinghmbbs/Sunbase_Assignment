@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Customer</title>
+  <!-- Bootstrap-->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .container {
+      margin-top: 50px;
+    }
+
+  </style>
+</head>
+<body style="background-color: black;">
+  <div class="container" style="width: 70vw;">
+    <h2 class="text-center" style="color: white;">Add Customer</h2>
+    <form id="addCustomerForm" class="d-flex flex-column justify-content-between" style="width: 70vw;">
+      <div class="d-flex justify-content-around">
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="firstName">First Name:</label>
+          <input type="text" class="form-control" id="firstName" placeholder="Enter first name" required >
+        </div>
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="lastName">Last Name:</label>
+          <input type="text" class="form-control" id="lastName" placeholder="Enter last name" required>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-around">
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="street">Street:</label>
+          <input type="text" class="form-control" id="street" placeholder="Enter street" required>
+        </div>
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="address">Address:</label>
+          <input type="text" class="form-control" id="address" placeholder="Enter address" required>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-around">
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="city">City:</label>
+          <input type="text" class="form-control" id="city" placeholder="Enter city" required>
+        </div>
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="state">State:</label>
+          <input type="text" class="form-control" id="state" placeholder="Enter state" required>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-around">
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="email">Email:</label>
+          <input type="email" class="form-control" id="email" placeholder="Enter email" required>
+        </div>
+        <div class="form-group" style="width: 40%; color: white;">
+          <label for="phoneNumber">Phone Number:</label>
+          <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-outline-danger" >Submit</button>
+    </form>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    // Function to handling form submission of customer adding form
+    document.getElementById('addCustomerForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // it prevent default form submission
+      
+      // input from user
+      var first_name = document.getElementById('firstName').value;
+      var last_name = document.getElementById('lastName').value;
+      var street = document.getElementById('street').value;
+      var address = document.getElementById('address').value;
+      var city = document.getElementById('city').value;
+      var state = document.getElementById('state').value;
+      var email = document.getElementById('email').value;
+      var phone = document.getElementById('phoneNumber').value;
+
+      // creating customer object
+      var customer = {
+        first_name: first_name,
+        last_name: last_name,
+        street: street,
+        address: address,
+        city: city,
+        state: state,
+        email: email,
+        phone: phone
+      };
+
+      // retriving jwt bearer token from cookie
+      const token = getCookie('jwt');
+
+      // it will redirect to login page if token is not present
+      if (!token) {
+        window.location.href = 'login.html'; // redirect to login page
+        return;
+      }
+
+      // post method for saving customer obj with bearer token pass in it
+      fetch('http://localhost:8080/home/api/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(customer)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to add customer');
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Customer added successfully:', data);
+        window.location.href = 'index.html'; //login page redirection
+      })
+      .catch(error => {
+        console.error('Error adding customer:', error);
+        // handle error if any
+        alert('Customer with the same email already exists in the database');
+      });
+    });
+
+    //function for retriving cookie value by name (in this case it will be 'jwt')
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        const cookieParts = cookie.split('=');
+        if (cookieParts[0] === name) {
+          return cookieParts[1];
+        }
+      }
+      return null;
+    }
+  </script>
+</body>
+</html>

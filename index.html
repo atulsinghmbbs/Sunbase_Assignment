@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Management</title>
+  
+
+  <!-- Bootstrap CSS -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .container {
+      margin-top: 50px;
+     
+      margin-left: 2%;
+     
+    }
+    
+    #paginationContainer{
+      gap:6px
+      
+    }
+    body, h2, option, p, button, div, select, th, td,label,input,form{
+      color: white;
+    }
+  </style>
+</head>
+<body style="background-color: black;">
+  <div class="container" style="color: black;">
+    <h2 class="text-left mb-3 ">Customer Management</h2>
+    <div class="text-right">
+      <div class="form-row mb-3">
+        <div class="col-auto">
+          <select id="searchCriteria" class="form-control">
+            <option value="name">Name</option>
+            <option value="email">Email</option>
+            <option value="city">City</option>
+            <option value="state">State</option>
+          </select>
+        </div>
+        <div class="col">
+          <input type="text" id="searchQuery" class="form-control" placeholder="Search">
+        </div>
+        <div class="col-auto">
+          <button type="button" class="btn btn-danger" onclick="searchCustomers()">Search</button>
+                
+      <button type="button" class="btn btn-danger" onclick="window.location.href='add_customer.html'">Add Customer</button>
+
+      <button type="button" class="btn btn-outline-secondary" onclick="syncCustomers()" style="color: white;">Sync</button>
+        </div>
+      </div>
+
+    </div>
+    <table class="table" style="width: 800px;">
+      <thead>
+        <tr id="tableHeaderRow">
+          <th>Customer ID</th>
+          <th>UUID</th>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Street</th>
+          <th>Address</th>
+          <th>City</th>
+          <th>State</th>
+          <th>Email</th>
+          <th>Phone No.</th>
+        </tr>
+       
+        
+        
+          
+        
+      </thead>
+      <tbody id="customerTableBody">
+        <!-- Customer data receive from server will be inserted here -->
+      </tbody>
+    </table>
+
+    <!-- Edit Customer -->
+  <div class="modal fade" id="editCustomerModal" tabindex="-1" role="dialog" aria-labelledby="editCustomerModalLabel" aria-hidden="true" >
+    <div class="modal-dialog" role="document"  >
+      <div class="modal-content" style="background-color: black; border: 1px solid rgb(212, 26, 26);">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editCustomerModalLabel">Edit Customer</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="editCustomerForm" class="d-flex flex-column align-item-center">
+            <div class="form-group">
+              <label for="editFirstName">First Name:</label>
+              <input type="text" class="form-control" id="editFirstName" required>
+            </div>
+            <div class="form-group">
+              <label for="editLastName">Last Name:</label>
+              <input type="text" class="form-control" id="editLastName" required>
+            </div>
+            <div class="form-group">
+              <label for="editStreet">Street:</label>
+              <input type="text" class="form-control" id="editStreet" required>
+            </div>
+            <div class="form-group">
+              <label for="editAddress">Address:</label>
+              <input type="text" class="form-control" id="editAddress" required>
+            </div>
+            <div class="form-group">
+              <label for="editCity">City:</label>
+              <input type="text" class="form-control" id="editCity" required>
+            </div>
+            <div class="form-group">
+              <label for="editState">State:</label>
+              <input type="text" class="form-control" id="editState" required>
+            </div>
+            <div class="form-group">
+              <label for="editEmail">Email:</label>
+              <input type="email" class="form-control" id="editEmail" required>
+            </div>
+            <div class="form-group">
+              <label for="editPhoneNumber">Phone Number:</label>
+              <input type="tel" class="form-control" id="editPhoneNumber" required>
+            </div>
+            <input type="hidden" id="editCustomerId">
+            <button type="submit" class="btn btn-danger">Update</button>
+          </form>
+        </div>
+      </div>
+    </div>
+      
+  </div>
+  <!-- pagination handling  -->
+<div id="paginationContainer" class="mt-3 p-2 d-flex justify-content-end"></div>
+<br>
+  <!-- Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+
+     // retriving jwt bearer token from cookie
+     const token = getCookie('jwt');
+
+ // it will redirect to login page if token is not present
+ document.getElementById('editCustomerForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // redirect to login page
+
+      // Get user input
+      var customerId = document.getElementById('editCustomerId').value;
+      var first_name = document.getElementById('editFirstName').value;
+      var last_name = document.getElementById('editLastName').value;
+      var street = document.getElementById('editStreet').value;
+      var address = document.getElementById('editAddress').value;
+      var city = document.getElementById('editCity').value;
+      var state = document.getElementById('editState').value;
+      var email = document.getElementById('editEmail').value;
+      var phone = document.getElementById('editPhoneNumber').value;
+
+      // creating  customer obj
+      var customer = {
+        first_name: first_name,
+        last_name: last_name,
+        street: street,
+        address: address,
+        city: city,
+        state: state,
+        email: email,
+        phone: phone
+      };
+
+      //put rqst to update customer data
+      fetch('http://localhost:8080/home/api/updateDetails/' + customerId, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify(customer)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to update customer');
+        }
+        
+        //refreshing  table after successfully updated
+        fetchCustomers();
+        // Closing the edit modal 
+        $('#editCustomerModal').modal('hide');
+      })
+      .catch(error => {
+        console.error('Error updating customer:', error);
+      //error handled
+        alert('Failed to update customer. Please try again.');
+      });
+    });
+
+    //Funtion for sync
+    function syncCustomers(){
+      fetch(`http://localhost:8080/home/api/customers/search/sunbase`, {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      })
+      .then(response => {
+       
+        return response.json();
+      })
+      .then(customers => {
+        console.log(customers)
+       // populateCustomerTable({content:customers});
+       fetchCustomers();
+      })
+      .catch(error => {
+        console.error('Error sync customers:', error);
+        // Handle error as needed
+        alert('Failed to sync customers. Please try again.');
+      });
+    }
+
+       // Function to search for customers
+       function searchCustomers() {
+      const criteria = document.getElementById('searchCriteria').value;
+      const query = document.getElementById('searchQuery').value;
+      console.log(criteria,query)
+      //get rqst to search customer
+      fetch(`http://localhost:8080/home/api/customers/search?searchTerm=${query}`, {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      })
+      .then(response => {
+       
+        return response.json();
+      })
+      .then(customers => {
+        console.log(customers)
+        populateCustomerTable({content:customers});
+      })
+      .catch(error => {
+        console.error('Error searching customers:', error);
+      });
+    }
+    
+     //function to delete customer by id
+    function deleteCustomer(customerId) {
+      //delete rqst for deleting customer by id
+      fetch('http://localhost:8080/home/api/deleteById/' + customerId, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to delete customer');
+        }
+        // Refreshing table after deletion 
+        fetchCustomers();
+      })
+      .catch(error => {
+        console.error('Error deleting customer:', error);
+        // error handled
+        alert('Failed to delete customer. Please try again.');
+      });
+    }
+
+  
+  const pageSize = 10; // pagination page will be of this size
+  let currentPage = 0; // when page opens initially
+
+  //function for fetching customer data from backend attached bearer token in header
+  function fetchCustomers() {
+    // If token is not present, redirect to login page
+    if (!token) {
+      window.location.href = 'login.html'; // Redirect to login page
+      return;
+    }
+
+    // this will fetch customer data with the bearer token in the Authorization header
+    fetch(`http://localhost:8080/home/api/getlist?page=${currentPage}&size=${pageSize}`, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    })
+    .then(response => response.json())
+    .then(customers => {
+      populateCustomerTable(customers);
+      // Adding pagination controls after fetching data
+      addPaginationControls(customers.totalPages);
+    })
+    .catch(error => {
+      console.error('Error fetching customers:', error);
+    });
+  }
+
+// Function to populate the customer table
+function populateCustomerTable(customers) {
+  const tableBody = document.getElementById('customerTableBody');
+  tableBody.innerHTML = '';
+
+  const tableHeaderRow = document.getElementById('tableHeaderRow');
+  if (tableHeaderRow.innerHTML === '') {
+    // table headers dynamically based on property names
+    Object.keys(customers.content[0]).forEach(propertyName => {
+      tableHeaderRow.innerHTML += `<th>${propertyName}</th>`;
+    });
+    
+    tableHeaderRow.innerHTML += '<th>Actions</th>';
+  }
+
+  customers.content.forEach(customer => {
+    const row = document.createElement('tr');
+
+    // table cells dynamically based on property values
+Object.values(customer).forEach(value => {
+  row.innerHTML += `<td>${value}</td>`;
+});
+
+row.innerHTML += `
+  <td>
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-primary btn-sm edit-btn " data-customer='${JSON.stringify(customer)}'>Edit</button>
+      <button type="button" class="btn btn-danger btn-sm ml-1" onclick="deleteCustomer(${customer.customerId})">Delete</button>
+    </div>
+  </td>
+`;
+
+tableBody.appendChild(row);
+
+  });
+
+  addListenerToEditBtn();
+}
+
+
+
+  // Function to attaching pagination controls
+  function addPaginationControls(totalPages) {
+    const paginationContainer = document.getElementById('paginationContainer');
+    paginationContainer.innerHTML = '';
+
+    for (let i = 0; i < totalPages; i++) {
+      const button = document.createElement('button');
+      button.textContent = i + 1;
+      button.className = 'btn btn-outline-danger';
+      button.onclick = function() {
+        currentPage = i;
+        fetchCustomers();
+      };
+      paginationContainer.appendChild(button);
+    }
+  }
+
+ 
+    // Function to retrieve a cookie value by name
+    function getCookie(name) {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        const cookieParts = cookie.split('=');
+        if (cookieParts[0] === name) {
+          return cookieParts[1];
+        }
+      }
+      return null;
+    }
+
+     // Function to open edit modal with customer data
+  function openEditModal(event) {
+    console.log(event)
+    // Retrieve the customer data from the data-customer attribute
+    const customer = JSON.parse(event.target.dataset.customer);
+
+    // Fill the form fields with customer data
+    document.getElementById('editCustomerId').value = customer.customerId;
+    document.getElementById('editFirstName').value = customer.first_name;
+    document.getElementById('editLastName').value = customer.last_name;
+    document.getElementById('editStreet').value = customer.street;
+    document.getElementById('editAddress').value = customer.address;
+    document.getElementById('editCity').value = customer.city;
+    document.getElementById('editState').value = customer.state;
+    document.getElementById('editEmail').value = customer.email;
+    document.getElementById('editPhoneNumber').value = customer.phone;
+
+    // Show the modal
+    $('#editCustomerModal').modal('show');
+  }
+
+  function addListenerToEditBtn(){
+  // Add event listener to all "Edit" buttons
+  const editButtons = document.querySelectorAll('.edit-btn');
+  editButtons.forEach(button => {
+    button.addEventListener('click', openEditModal);
+  });
+  }
+
+    // Fetch customers when the page loads
+    fetchCustomers();
+  </script>
+
+</body>
+</html>
